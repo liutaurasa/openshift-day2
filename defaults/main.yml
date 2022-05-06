@@ -1,2 +1,10 @@
 ---
 # defaults file for openshift-logging
+openshift_logging_templates:
+  - eo-namespace.yml
+  - olo-namespace.yml
+  - eo-og.yml
+  - eo-sub.yml
+  - olo-og.yml
+  - olo-sub.yml
+  - olo-instance.yml

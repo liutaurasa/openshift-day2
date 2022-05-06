@@ -1,0 +1,36 @@
+---
+- name: Create directory for template files
+  file:
+    path: "{{ openshift_logging_yamls | default('/tmp/openshift_logging_yamls') }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Create template files
+  template:
+    src: "{{ _template }}.j2"
+    dest: "{{ openshift_logging_yamls | default('/tmp/openshift_logging_yamls') }}/{{ _idx }}_{{ _template }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ openshift_logging_templates }}"
+  loop_control:
+    loop_var: _template
+    index_var: _idx
+
+- name: Install yaml files for logging
+  k8s:
+    state: present
+    src: "{{ openshift_logging_yamls | default('/tmp/openshift_logging_yamls') }}/{{ _idx }}_{{ _template }}"
+  loop: "{{ openshift_logging_templates }}"
+  loop_control:
+    loop_var: _template
+    index_var: _idx
+
+- name: Create directory for template files
+  file:
+    path: "{{ openshift_logging_yamls | default('/tmp/openshift_logging_yamls') }}"
+    state: absent
+  when: remove_yamls | default(False)
+

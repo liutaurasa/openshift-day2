@@ -7,7 +7,7 @@
     - packages
 
 - block:
-    - name: Log in (obtain access token)
+    - name: Openshift API Log in (obtain access token)
       k8s_auth:
         host: "{{ openshift['api'] }}"
         username: "{{ openshift['admin_user'] }}"
@@ -15,136 +15,16 @@
         validate_certs: "{{ openshift['validate_api_certs'] | default(False) }}"
       check_mode: False
       register: k8s_auth_results
-    
-    - name: Create a namespace for the OpenShift Elasticsearch Operator
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: v1
-          kind: Namespace
-          metadata:
-            name: openshift-operators-redhat 
-            annotations:
-              openshift.io/node-selector: ""
-            labels:
-              openshift.io/cluster-monitoring: "true"
 
-    - name: Create a namespace for the Red Hat OpenShift Logging Operator
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: v1
-          kind: Namespace
-          metadata:
-            name: openshift-logging
-            annotations:
-              openshift.io/node-selector: ""
-            labels:
-              openshift.io/cluster-monitoring: "true"
-    
-    - name: Create an Operator Group object
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: operators.coreos.com/v1
-          kind: OperatorGroup
-          metadata:
-            name: openshift-operators-redhat
-            namespace: openshift-operators-redhat 
-          spec: {}
-    
-    - name: Create a Subscription object
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: operators.coreos.com/v1alpha1
-          kind: Subscription
-          metadata:
-            name: "elasticsearch-operator"
-            namespace: "openshift-operators-redhat" 
-          spec:
-            channel: "{{ openshift_logging['version'] | default('stable') }}"
-            installPlanApproval: "Automatic"
-            source: "{{ openshift['catalog_source'] | default('redhat-operators') }}"
-            sourceNamespace: "openshift-marketplace"
-            name: "elasticsearch-operator"
-    
-    # Install the Red Hat OpenShift Logging Operator
-    
-    - name: Create an Operator Group object 
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: operators.coreos.com/v1
-          kind: OperatorGroup
-          metadata:
-            name: cluster-logging
-            namespace: openshift-logging 
-          spec:
-            targetNamespaces:
-            - openshift-logging 
-    
-    - name: Create a Subscription object
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: operators.coreos.com/v1alpha1
-          kind: Subscription
-          metadata:
-            name: cluster-logging
-            namespace: openshift-logging 
-          spec:
-            channel: "{{ openshift_logging['channel'] | default('stable') }}"
-            name: cluster-logging
-            source: "{{ openshift['catalog_source'] | default('redhat-operators') }}"
-            sourceNamespace: openshift-marketplace
-    
-    # Create an OpenShift Logging instance
-    - name: Create an instance object
-      k8s:
-        state: present
-        resource_definition:
-          apiVersion: "logging.openshift.io/v1"
-          kind: "ClusterLogging"
-          metadata:
-            name: "instance" 
-            namespace: "openshift-logging"
-          spec:
-            managementState: "Managed"  
-            logStore:
-              type: "elasticsearch"  
-              retentionPolicy: 
-                application:
-                  maxAge: 1d
-                infra:
-                  maxAge: 7d
-                audit:
-                  maxAge: 7d
-              elasticsearch:
-                nodeCount: 3 
-                storage:
-                  storageClassName: "{{ openshift_logging['elasticsearch']['storage_class'] | default('') }}"
-                  size: 200G
-                resources: 
-                  limits:
-                    memory: "16Gi"
-                  requests:
-                    memory: "16Gi"
-                proxy: 
-                  resources:
-                    limits:
-                      memory: 256Mi
-                    requests:
-                       memory: 256Mi
-                redundancyPolicy: "SingleRedundancy"
-            visualization:
-              type: "kibana"  
-              kibana:
-                replicas: 1
-            collection:
-              logs:
-                type: "fluentd"  
-                fluentd: {} 
+    - name: Setting Logging
+      import_tasks: logging.yml
+      tags:
+        - logging
+
+    - name: Setting MachineSets
+      import_tasks: machinesets_vmware.yml
+      tags:
+        - machinesets
 
   always:
     - name: If login succeeded, try to log out (revoke access token)
