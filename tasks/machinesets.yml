@@ -1,0 +1,30 @@
+---
+# Get Openshift information
+- name: Get vSphere infrastructure ID
+  k8s_info:
+    api_version: config.openshift.io/v1
+    kind: Infrastructure
+    name: cluster
+  register: _k8s_info_infrastructure_cluster
+
+- set_fact:
+    _infrastructure_cluster: "{{ _k8s_info_infrastructure_cluster['resources'] | first }}"
+
+# Create VMWare machinesets
+- name: Create directory for YAML files
+  file:
+    path: "{{ openshift_machinesets_yamls | default('/tmp/openshift_machinesets_yamls') }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Create YAML file
+  template:
+    src: "machinesets/{{ _yaml }}.j2"
+    dest: "{{ openshift_machinesets_yamls | default('/tmp/openshift_machinesets_yamls') }}/_{{ _yaml }}"
+    owner: root
+    group: root
+    mode: "0600"
+  vars:
+    _yaml: vsphere.yml

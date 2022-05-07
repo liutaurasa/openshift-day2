@@ -3,7 +3,7 @@ kind: MachineSet
 metadata:
   creationTimestamp: null
   labels:
-    machine.openshift.io/cluster-api-cluster: {{ _k8s_info_cluster }}
+    machine.openshift.io/cluster-api-cluster: {{ _infrastructure_cluster['status']['infrastructureName'] }}
   name: <infrastructure_id>-<role> 
   namespace: openshift-machine-api
 spec:

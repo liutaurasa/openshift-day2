@@ -22,7 +22,7 @@
         - logging
 
     - name: Setting MachineSets
-      import_tasks: machinesets_vmware.yml
+      import_tasks: machinesets.yml
       tags:
         - machinesets
 
